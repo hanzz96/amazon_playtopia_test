@@ -2,7 +2,7 @@
 
 **Sumber spec**: [`PROBLEM_RETAIL_WALLET.md`](PROBLEM_RETAIL_WALLET.md)
 **Workflow**: mengikuti [`CLAUDE.md`](CLAUDE.md): `/ecc:plan` (dokumen ini) → skill `tdd-workflow` → `/code-review`
-**Status**: diimplementasikan. Asumsi sudah dikonfirmasi: FIFO, transfer masuk melunasi hutang otomatis, login satu kata, tanpa desimal. Belum dicommit.
+**Status**: selesai diimplementasikan dan dicommit di branch `feat/retail-wallet-cli` (71 tes lulus, coverage 99,8% baris). Empat keputusan sudah dikonfirmasi (FIFO, transfer masuk melunasi hutang otomatis, login satu kata, tanpa desimal). Sisanya masih default, lihat bagian 3.
 **Kompleksitas**: Low–Medium (sekitar 3–4 jam termasuk tes)
 
 ## 1. Ringkasan kebutuhan
@@ -70,22 +70,45 @@ Baris `Transferred` tidak dicetak saat tidak ada uang yang berpindah (balance $0
 | Jika melebihi balance | Ditolak, state tidak berubah | Terkirim sebagian, sisanya jadi hutang |
 | Bisa membuat hutang | Tidak | Ya |
 
-## 3. Keputusan yang diasumsikan (default)
+## 3. Keputusan
 
-Spec diam soal hal-hal ini. Ubah sebelum implementasi jika tidak setuju.
+Spec diam soal hal-hal ini. **Dikonfirmasi** berarti sudah dijawab. **Default** berarti asumsi saya yang masih menunggu konfirmasi dan mudah diubah (tes dulu, lalu kode).
 
-| # | Keputusan | Default |
+| # | Topik | Keputusan | Status |
+|---|---|---|---|
+| 1 | Transfer masuk ke penerima yang punya hutang | Melunasi hutang penerima dulu secara otomatis, seperti deposit | Dikonfirmasi |
+| 2 | `login` saat sudah login | Ditolak, minta logout dulu | Default |
+| 3 | Urutan pelunasan jika kreditor banyak | FIFO: hutang yang terbentuk paling awal dibayar paling dulu. Menambah hutang ke kreditor yang sama tidak mengubah urutannya | Dikonfirmasi |
+| 4 | Angka | Hanya bilangan bulat positif. Desimal (`0.01`, `12.5`), nol, negatif, dan non-angka ditolak. Uang disimpan sebagai dolar utuh | Dikonfirmasi |
+| 5 | Nama login | Satu kata saja. `login Johan Andreas` ditolak dengan `Usage: login [name]` dan tidak membuat customer. `transfer` juga persis dua argumen | Dikonfirmasi |
+| 6 | Transfer ke nama yang belum ada | Ditolak, tidak auto-create | Default |
+| 7 | Prompt `$ ` | Dicetak saat interaktif (stdin dan stdout adalah TTY), tidak dicetak saat input dipipe | Default |
+| 8 | Transfer ke diri sendiri | Ditolak | Default |
+| 9 | Nama dan command | Nama case-sensitive (`emma` ≠ `Emma`). Command case-insensitive (`LOGIN Emma` berfungsi) | Default |
+| 10 | Wording pesan error | Dipilih sendiri karena spec tidak memberi contoh, lihat katalog di bawah | Default |
+| 11 | Stack | JavaScript (ESM) dan test runner bawaan Node (`node:test`). Tanpa dependency dan tanpa langkah build | Dikonfirmasi (permintaan pengguna) |
+
+### Katalog pesan error
+
+Semua error dicetak di stdout sebagai satu baris, dan state tidak berubah. Input baris diparse lebih dulu (command, jumlah argumen, format amount) sebelum cek login.
+
+| Kode | Pesan | Kapan |
 |---|---|---|
-| 1 | Transfer masuk ke penerima yang punya hutang | Melunasi hutang penerima dulu secara otomatis, seperti deposit (**dikonfirmasi**) |
-| 2 | `login` saat sudah login | Ditolak, minta logout dulu |
-| 3 | Urutan pelunasan jika kreditor banyak | FIFO: hutang yang terbentuk paling awal dibayar paling dulu (**dikonfirmasi**) |
-| 4 | Angka | **Hanya bilangan bulat positif.** Desimal (`0.01`, `12.5`) ditolak dengan pesan `Invalid amount. Use a positive whole number`. Nol, negatif, dan non-angka juga ditolak (**dikonfirmasi: desimal tidak perlu ditangani**) |
-| 5 | Nama login | **Satu kata saja.** `login Johan Andreas` ditolak dengan `Usage: login [name]` dan tidak membuat customer. `transfer` juga persis dua argumen (**dikonfirmasi**) |
-| 6 | Transfer ke nama yang belum ada | Ditolak, tidak auto-create |
-| 7 | Prompt `$ ` | Dicetak saat interaktif (stdin adalah TTY), tidak dicetak saat input dipipe |
-| 8 | Stack | JavaScript (ESM) dan test runner bawaan Node (`node:test`). Tanpa dependency runtime maupun dev, dan tanpa langkah build |
+| `NOT_LOGGED_IN` | `Please login first` | `deposit`, `withdraw`, `transfer`, atau `logout` tanpa sesi |
+| `ALREADY_LOGGED_IN` | `Already logged in as X. Please logout first` | `login` saat sudah login |
+| `INVALID_NAME` | `Invalid name. Use a single word without spaces` | Penjaga di domain (parser sudah menolak lebih dulu) |
+| `INVALID_AMOUNT` | `Invalid amount. Use a positive whole number` | Desimal, nol, negatif, non-angka, atau lebih dari batas |
+| `INSUFFICIENT_BALANCE` | `Insufficient balance. Your balance is $X` | `withdraw` melebihi balance |
+| `CUSTOMER_NOT_FOUND` | `Customer X not found` | `transfer` ke nama yang belum pernah login |
+| `SELF_TRANSFER` | `You cannot transfer to yourself` | `transfer` ke diri sendiri |
+| (usage) | `Usage: login [name]`, `Usage: deposit [amount]`, `Usage: withdraw [amount]`, `Usage: transfer [target] [amount]`, `Usage: logout` | Jumlah argumen salah |
+| (usage) | `Unknown command: X. Available commands: login, deposit, withdraw, transfer, logout` | Command tidak dikenal |
 
-Catatan tambahan: nama bersifat case-sensitive (`emma` ≠ `Emma`). Wording pesan error dipilih sendiri karena spec tidak memberi contoh (`Insufficient balance`, `Customer not found`, `Please login first`).
+### Batas dan non-goal
+
+- **Batas amount**: maksimal 10.000.000.000 per operasi. Lebih dari itu ditolak sebagai `INVALID_AMOUNT`.
+- **Non-goal**: persistensi data, password atau autentikasi, banyak sesi login bersamaan, riwayat transaksi, desimal dan mata uang lain.
+- **Diketahui, sengaja tidak ditangani**: `EPIPE` jika stdout ditutup (misalnya `./start.sh | head`), dan total saldo yang secara teori bisa melewati `Number.MAX_SAFE_INTEGER` setelah sekitar 900.000 deposit di batas maksimum.
 
 ## 4. Pattern grounding
 
@@ -117,7 +140,8 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 - `/code-review` (dan agent `typescript-reviewer`) sebelum dianggap selesai.
 
 ### Fase 5: README
-- Cara menjalankan, daftar command, contoh sesi, tabel keputusan di bagian 3, dan tautan ke dokumen ini.
+- README wajib memuat lima hal: (1) versi runtime yang dibutuhkan, (2) instruksi setup dan menjalankan, (3) instruksi menjalankan tes, (4) keputusan dan asumsi utama beserta statusnya, (5) keterbatasan yang diketahui dan pekerjaan yang belum selesai. Selain itu: daftar command, contoh sesi, dan tautan ke dokumen ini.
+- Versi Node minimum ditetapkan 20, karena tes dijalankan dan lulus di Node 20, 22, 24, dan 26. Node 18 tidak tersedia untuk diuji.
 
 ## 6. File yang dibuat atau diubah
 
@@ -125,8 +149,8 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 |---|---|
 | `start.sh`, `package.json`, `.gitignore` | CREATE |
 | `src/domain/{money,errors,wallet}.js` | CREATE |
-| `src/cli/{parser,format,repl}.js`, `src/index.js` | CREATE |
-| `tests/*.test.js`, `tests/fixtures/example-session.txt` | CREATE |
+| `src/cli/{parser,format,execute,repl}.js`, `src/index.js` | CREATE |
+| `tests/*.test.js` (termasuk `e2e.test.js` lewat `start.sh`), `tests/helpers/transcript.js`, `tests/fixtures/{example,extended}-session.txt` | CREATE |
 | `README.md` | UPDATE |
 
 ## 7. Risiko
@@ -142,10 +166,19 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 
 ## 8. Kriteria selesai
 
-- [ ] Semua fase selesai
-- [ ] `npm test` lulus, termasuk golden test
-- [ ] Coverage minimal 80%
-- [ ] `./start.sh` dijalankan dua kali: run kedua mulai dari kosong
-- [ ] Output example session cocok dengan spec
-- [ ] `/code-review` bersih
-- [ ] README mencatat semua keputusan
+- [x] Semua fase selesai
+- [x] `npm test` lulus, termasuk golden test (71 dari 71)
+- [x] Coverage minimal 80% (99,8% baris, 98% branch, 100% fungsi)
+- [x] `./start.sh` dijalankan dua kali: run kedua mulai dari kosong (ada di `tests/e2e.test.js`)
+- [x] Output example session cocok dengan spec (golden test baris per baris)
+- [x] `/code-review` tanpa temuan CRITICAL atau HIGH (satu MEDIUM sudah diperbaiki, lihat bagian 9)
+- [x] README memuat lima hal wajib di atas, termasuk semua keputusan dan keterbatasan
+- [ ] Keputusan berstatus Default (#2, #6, #7, #8, #9, #10) dikonfirmasi
+
+## 9. Hasil implementasi
+
+- **Review**: `/code-review` mode lokal, dijalankan inline. Agent `typescript-reviewer` tidak dijalankan. Script lint dan typecheck tidak ada, jadi dilewati.
+- **Temuan MEDIUM, sudah diperbaiki**: detail `{ name }` pada error menimpa `Error.name` sehingga nama error menjadi nama customer. Diperbaiki dengan TDD (tes gagal dulu), detail diganti `customer`.
+- **Temuan LOW, sengaja tidak diperbaiki**: `EPIPE`, batas total saldo (lihat bagian 3), JSDoc belum lengkap di beberapa method publik, dan satu baris `default` di `execute.js` tidak tercover.
+- **Perubahan setelah konfirmasi**: nama login jadi satu kata, desimal ditolak, uang dari sen ke dolar utuh, dan aturan "kata berisi angka saja ditolak" dihapus karena sudah tidak diperlukan.
+- **Penyimpangan dari `CLAUDE.md`**: tidak ada checkpoint commit RED dan GREEN terpisah (seluruh pekerjaan satu commit), dan laporan bukti TDD belum ditulis. Perubahan setelah konfirmasi tidak ditinjau ulang dengan `/code-review`.
