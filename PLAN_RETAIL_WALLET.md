@@ -2,7 +2,7 @@
 
 **Sumber spec**: [`PROBLEM_RETAIL_WALLET.md`](PROBLEM_RETAIL_WALLET.md)
 **Workflow**: mengikuti [`CLAUDE.md`](CLAUDE.md): `/ecc:plan` (dokumen ini) → skill `tdd-workflow` → `/code-review`
-**Status**: selesai diimplementasikan dan dicommit di branch `feat/retail-wallet-cli` (71 tes lulus, coverage 99,8% baris). Empat keputusan sudah dikonfirmasi (FIFO, transfer masuk melunasi hutang otomatis, login satu kata, tanpa desimal). Sisanya masih default, lihat bagian 3.
+**Status**: selesai diimplementasikan dan dicommit di branch `feat/retail-wallet-cli` (72 tes lulus, coverage 99,8% baris). Empat keputusan sudah dikonfirmasi (FIFO, transfer masuk melunasi hutang otomatis, login satu kata, tanpa desimal). Sisanya masih default, lihat bagian 3.
 **Kompleksitas**: Low–Medium (sekitar 3–4 jam termasuk tes)
 
 ## 1. Ringkasan kebutuhan
@@ -87,6 +87,7 @@ Spec diam soal hal-hal ini. **Dikonfirmasi** berarti sudah dijawab. **Default** 
 | 9 | Nama dan command | Nama case-sensitive (`emma` ≠ `Emma`). Command case-insensitive (`LOGIN Emma` berfungsi) | Default |
 | 10 | Wording pesan error | Dipilih sendiri karena spec tidak memberi contoh, lihat katalog di bawah | Default |
 | 11 | Stack | JavaScript (ESM) dan test runner bawaan Node (`node:test`). Tanpa dependency dan tanpa langkah build | Dikonfirmasi (permintaan pengguna) |
+| 12 | Batas amount | Maksimal $10.000.000.000 (10000000000) per operasi `deposit`, `withdraw`, atau `transfer`. Lebih dari itu ditolak sebagai `INVALID_AMOUNT`. Total saldo customer tidak dibatasi | Default |
 
 ### Katalog pesan error
 
@@ -140,7 +141,8 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 - `/code-review` (dan agent `typescript-reviewer`) sebelum dianggap selesai.
 
 ### Fase 5: README
-- README wajib memuat lima hal: (1) versi runtime yang dibutuhkan, (2) instruksi setup dan menjalankan, (3) instruksi menjalankan tes, (4) keputusan dan asumsi utama beserta statusnya, (5) keterbatasan yang diketahui dan pekerjaan yang belum selesai. Selain itu: daftar command, contoh sesi, dan tautan ke dokumen ini.
+- README wajib memuat lima hal: (1) versi runtime yang dibutuhkan, (2) instruksi setup dan menjalankan, (3) instruksi menjalankan tes, (4) keputusan dan asumsi utama beserta statusnya, (5) keterbatasan yang diketahui dan pekerjaan yang belum selesai. README hanya berisi kelima bagian itu, tanpa bagian lain (tanpa daftar command terpisah, contoh sesi, atau layout).
+- Portabilitas: `start.sh` memakai `#!/bin/sh` (tanpa bashism), `.gitattributes` memaksa LF, e2e di Windows lewat `bash start.sh` (dilewati dengan alasan jika bash tidak ada), dan `npm start` sebagai jalan tanpa shell. Terverifikasi di macOS dan Linux (Alpine, Node 22). Windows belum dijalankan; workflow CI `.github/workflows/test.yml` disiapkan tapi belum pernah berjalan.
 - Versi Node minimum ditetapkan 20, karena tes dijalankan dan lulus di Node 20, 22, 24, dan 26. Node 18 tidak tersedia untuk diuji.
 
 ## 6. File yang dibuat atau diubah
@@ -167,13 +169,13 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 ## 8. Kriteria selesai
 
 - [x] Semua fase selesai
-- [x] `npm test` lulus, termasuk golden test (71 dari 71)
+- [x] `npm test` lulus, termasuk golden test (72 dari 72)
 - [x] Coverage minimal 80% (99,8% baris, 98% branch, 100% fungsi)
 - [x] `./start.sh` dijalankan dua kali: run kedua mulai dari kosong (ada di `tests/e2e.test.js`)
 - [x] Output example session cocok dengan spec (golden test baris per baris)
 - [x] `/code-review` tanpa temuan CRITICAL atau HIGH (satu MEDIUM sudah diperbaiki, lihat bagian 9)
 - [x] README memuat lima hal wajib di atas, termasuk semua keputusan dan keterbatasan
-- [ ] Keputusan berstatus Default (#2, #6, #7, #8, #9, #10) dikonfirmasi
+- [ ] Keputusan berstatus Default (#2, #6, #7, #8, #9, #10, #12) dikonfirmasi
 
 ## 9. Hasil implementasi
 

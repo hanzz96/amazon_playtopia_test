@@ -1,6 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # Starts the Retail Wallet CLI. State lives only in memory, so every run starts empty.
-set -euo pipefail
+# Plain POSIX sh (no bashisms), so it also works where bash is not installed, e.g. Alpine.
+set -eu
 
 cd "$(dirname "$0")"
 

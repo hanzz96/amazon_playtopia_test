@@ -28,6 +28,14 @@ test('the last command is executed even without a trailing newline', async () =>
   assert.equal(await run('login Emma'), 'Hello, Emma!\nYour balance is $0\n');
 });
 
+test('Windows (CRLF) line endings behave like Unix ones', async () => {
+  const output = await run('login Emma\r\ndeposit 100\r\nlogout\r\n');
+  assert.equal(
+    output,
+    'Hello, Emma!\nYour balance is $0\nYour balance is $100\nGoodbye, Emma!\n',
+  );
+});
+
 test('empty input ends cleanly with no output', async () => {
   assert.equal(await run(''), '');
 });

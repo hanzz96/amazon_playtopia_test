@@ -1,0 +1,5 @@
+# Keep LF line endings on every platform. Without this, Git for Windows may check out start.sh
+# with CRLF, which breaks the shebang ("bash\r: No such file or directory"), and may rewrite the
+# recorded session fixtures that the tests compare against.
+* text=auto eol=lf
+*.sh text eol=lf
