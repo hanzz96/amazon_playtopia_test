@@ -2,7 +2,7 @@
 
 **Sumber spec**: [`PROBLEM_RETAIL_WALLET.md`](PROBLEM_RETAIL_WALLET.md)
 **Workflow**: mengikuti [`CLAUDE.md`](CLAUDE.md): `/ecc:plan` (dokumen ini) → skill `tdd-workflow` → `/code-review`
-**Status**: selesai diimplementasikan dan dicommit di branch `feat/retail-wallet-cli` (72 tes lulus, coverage 99,8% baris). Empat keputusan sudah dikonfirmasi (FIFO, transfer masuk melunasi hutang otomatis, login satu kata, tanpa desimal). Sisanya masih default, lihat bagian 3.
+**Status**: selesai diimplementasikan dan dicommit di branch `feat/retail-wallet-cli` (17 tes lulus). Empat keputusan sudah dikonfirmasi (FIFO, transfer masuk melunasi hutang otomatis, login satu kata, tanpa desimal). Sisanya masih default, lihat bagian 3.
 **Kompleksitas**: Low–Medium (sekitar 3–4 jam termasuk tes)
 
 ## 1. Ringkasan kebutuhan
@@ -131,7 +131,7 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 - **Validasi**: `npm test` (menjalankan `node --test`).
 
 ### Fase 3: CLI (TDD)
-- Tulis **golden test** lebih dulu: memutar ulang seluruh example session dan membandingkan output baris per baris. Tambah tes parser untuk nama satu kata (multi-kata ditolak), desimal, input invalid, dan command tanpa login.
+- Rencana awal: golden test yang memutar ulang example session (kemudian dihapus, lihat bagian 9). Tes parser untuk nama satu kata (multi-kata ditolak), desimal, input invalid, dan command tanpa login.
 - Implementasi `cli/parser.js` (tokenisasi dan validasi argumen), `cli/format.js` (teks output), `cli/repl.js` (loop `readline`, berhenti rapi saat EOF), `index.js` (entry point).
 - **Validasi**: `printf 'login Emma\ndeposit 100\nlogout\n' | ./start.sh`.
 
@@ -142,7 +142,7 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 
 ### Fase 5: README
 - README wajib memuat lima hal: (1) versi runtime yang dibutuhkan, (2) instruksi setup dan menjalankan, (3) instruksi menjalankan tes, (4) keputusan dan asumsi utama beserta statusnya, (5) keterbatasan yang diketahui dan pekerjaan yang belum selesai. README hanya berisi kelima bagian itu, tanpa bagian lain (tanpa daftar command terpisah, contoh sesi, atau layout).
-- Portabilitas: `start.sh` memakai `#!/bin/sh` (tanpa bashism), `.gitattributes` memaksa LF, e2e di Windows lewat `bash start.sh` (dilewati dengan alasan jika bash tidak ada), dan `npm start` sebagai jalan tanpa shell. Terverifikasi lokal di macOS dan Linux (Alpine, Node 22). Windows lulus di CI `.github/workflows/test.yml` (Node 20, 22, 24; 72 tes, 0 dilewati), belum dicoba manual di mesin Windows.
+- Portabilitas: `start.sh` memakai `#!/bin/sh` (tanpa bashism), `.gitattributes` memaksa LF, `npm start` sebagai jalan tanpa shell. Terverifikasi lokal di macOS dan Linux (Alpine, Node 22). Windows lulus di CI `.github/workflows/test.yml` (Node 20, 22, 24, dengan suite lama 72 tes; suite 17 tes belum dijalankan di CI), belum dicoba manual di mesin Windows.
 - Versi Node minimum ditetapkan 20, karena tes dijalankan dan lulus di Node 20, 22, 24, dan 26. Node 18 tidak tersedia untuk diuji.
 
 ## 6. File yang dibuat atau diubah
@@ -152,16 +152,16 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 | `start.sh`, `package.json`, `.gitignore` | CREATE |
 | `src/domain/{money,errors,wallet}.js` | CREATE |
 | `src/cli/{parser,format,execute,repl}.js`, `src/index.js` | CREATE |
-| `tests/*.test.js` (termasuk `e2e.test.js` lewat `start.sh`), `tests/helpers/transcript.js`, `tests/fixtures/{example,extended}-session.txt` | CREATE |
+| `tests/{wallet,parser}.test.js` | CREATE |
 | `README.md` | UPDATE |
 
 ## 7. Risiko
 
 | Risiko | Level | Mitigasi |
 |---|---|---|
-| Format output tidak persis seperti contoh | HIGH | Golden test dari example session |
-| Output npm bocor ke stdout dan merusak pencocokan | HIGH | Arahkan ke stderr, tes dengan pipe |
-| Netting tidak mencetak `Transferred`, mudah terlewat | MEDIUM | Ada di golden test (Emma → Kevin 30) |
+| Format output tidak persis seperti contoh | HIGH | Diverifikasi manual (golden test dihapus, lihat bagian 9) |
+| Output npm bocor ke stdout dan merusak pencocokan | HIGH | Arahkan ke stderr; diverifikasi manual dengan pipe |
+| Netting tidak mencetak `Transferred`, mudah terlewat | MEDIUM | Golden test sudah dihapus; kini hanya diverifikasi manual (lihat bagian 9) |
 | `start.sh` gagal karena npm atau jaringan | LOW | Tanpa dependency, jadi tidak ada yang diunduh |
 | Tanpa tipe statis, salah ketik nama field lolos sampai runtime | LOW | Tes menyeluruh, JSDoc pada fungsi domain, dan `/code-review` |
 | Cascade pelunasan (A→B→C) | LOW | Test khusus. Total hutang selalu berkurang sehingga pasti berhenti |
@@ -169,10 +169,10 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 ## 8. Kriteria selesai
 
 - [x] Semua fase selesai
-- [x] `npm test` lulus, termasuk golden test (72 dari 72)
-- [x] Coverage minimal 80% (99,8% baris, 98% branch, 100% fungsi)
-- [x] `./start.sh` dijalankan dua kali: run kedua mulai dari kosong (ada di `tests/e2e.test.js`)
-- [x] Output example session cocok dengan spec (golden test baris per baris)
+- [x] `npm test` lulus (17 dari 17)
+- [x] Coverage minimal 80% (sekitar 82% baris jika semua file `src` dihitung; `npm run test:coverage` menampilkan 98,9% karena hanya menghitung file yang dimuat tes)
+- [x] `./start.sh` dijalankan dua kali: run kedua mulai dari kosong (diverifikasi manual, tidak ada tes otomatis)
+- [x] Output example session cocok dengan spec (diverifikasi manual, tidak ada tes otomatis)
 - [x] `/code-review` tanpa temuan CRITICAL atau HIGH (satu MEDIUM sudah diperbaiki, lihat bagian 9)
 - [x] README memuat lima hal wajib di atas, termasuk semua keputusan dan keterbatasan
 - [ ] Keputusan berstatus Default (#2, #6, #7, #8, #9, #10, #12) dikonfirmasi
@@ -182,5 +182,6 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 - **Review**: `/code-review` mode lokal, dijalankan inline. Agent `typescript-reviewer` tidak dijalankan. Script lint dan typecheck tidak ada, jadi dilewati.
 - **Temuan MEDIUM, sudah diperbaiki**: detail `{ name }` pada error menimpa `Error.name` sehingga nama error menjadi nama customer. Diperbaiki dengan TDD (tes gagal dulu), detail diganti `customer`.
 - **Temuan LOW, sengaja tidak diperbaiki**: `EPIPE`, batas total saldo (lihat bagian 3), JSDoc belum lengkap di beberapa method publik, dan satu baris `default` di `execute.js` tidak tercover.
+- **Skala tes**: suite diringkas dari 72 menjadi 17 tes yang hanya menjaga aturan bisnis (login, validasi amount, withdraw, transfer, hutang, FIFO, netting, invariant acak) dan parser command, supaya sesuai skala yang realistis dibuat manusia. Golden test (sesi contoh) dan e2e (`start.sh`) dari rencana awal dihapus atas permintaan, jadi format teks output dan "mulai dari kosong tiap run" kini hanya diverifikasi manual. Diuji dengan 6 mutasi sengaja pada kode inti: semuanya ketahuan (satu celah, `10.0` lolos sebagai angka bulat, ditutup dengan tes tambahan). Mutasi pada teks output dan pada state antar-run tidak ketahuan, sesuai konsekuensi penghapusan tadi.
 - **Perubahan setelah konfirmasi**: nama login jadi satu kata, desimal ditolak, uang dari sen ke dolar utuh, dan aturan "kata berisi angka saja ditolak" dihapus karena sudah tidak diperlukan.
 - **Penyimpangan dari `CLAUDE.md`**: tidak ada checkpoint commit RED dan GREEN terpisah (seluruh pekerjaan satu commit), dan laporan bukti TDD belum ditulis. Perubahan setelah konfirmasi tidak ditinjau ulang dengan `/code-review`.

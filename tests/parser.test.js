@@ -3,56 +3,51 @@ import assert from 'node:assert/strict';
 import { parseLine, UsageError } from '../src/cli/parser.js';
 import { WalletError } from '../src/domain/errors.js';
 
-function assertUsage(line, usage) {
-  assert.throws(
-    () => parseLine(line),
-    (err) => err instanceof UsageError && err.message.startsWith(usage),
-    `expected "${line}" to fail with ${usage}`,
-  );
-}
-
-test('blank lines parse to nothing', () => {
-  assert.equal(parseLine(''), null);
-  assert.equal(parseLine('   \t '), null);
-});
-
-test('login takes exactly one word as the name', () => {
+test('each command is parsed, commands are case-insensitive, and blank lines are ignored', () => {
+  assert.equal(parseLine('   '), null);
   assert.deepEqual(parseLine('login Emma'), { command: 'login', name: 'Emma' });
-  assert.deepEqual(parseLine('  login   Emma  '), { command: 'login', name: 'Emma' });
-});
-
-test('login without a name, or with several words, shows its usage', () => {
-  assertUsage('login', 'Usage: login [name]');
-  assertUsage('login Johan Andreas', 'Usage: login [name]');
-  assertUsage('login Emma 100', 'Usage: login [name]');
-});
-
-test('commands are case-insensitive', () => {
   assert.deepEqual(parseLine('LOGIN Emma'), { command: 'login', name: 'Emma' });
-  assert.deepEqual(parseLine('Deposit 5'), { command: 'deposit', amount: 5 });
-});
-
-test('deposit and withdraw parse a whole-number amount', () => {
   assert.deepEqual(parseLine('deposit 100'), { command: 'deposit', amount: 100 });
-  assert.deepEqual(parseLine('withdraw 12'), { command: 'withdraw', amount: 12 });
+  assert.deepEqual(parseLine('withdraw 5'), { command: 'withdraw', amount: 5 });
+  assert.deepEqual(parseLine('transfer Emma 50'), {
+    command: 'transfer',
+    target: 'Emma',
+    amount: 50,
+  });
+  assert.deepEqual(parseLine('logout'), { command: 'logout' });
 });
 
-test('deposit and withdraw need exactly one argument', () => {
-  assertUsage('deposit', 'Usage: deposit [amount]');
-  assertUsage('deposit 10 20', 'Usage: deposit [amount]');
-  assertUsage('withdraw', 'Usage: withdraw [amount]');
-  assertUsage('withdraw 1 2', 'Usage: withdraw [amount]');
+test('wrong arguments and unknown commands are usage errors', () => {
+  const cases = {
+    login: 'Usage: login [name]',
+    'login Johan Andreas': 'Usage: login [name]',
+    deposit: 'Usage: deposit [amount]',
+    'deposit 10 20': 'Usage: deposit [amount]',
+    'withdraw 1 2': 'Usage: withdraw [amount]',
+    'transfer Emma': 'Usage: transfer [target] [amount]',
+    'transfer Johan Andreas 7': 'Usage: transfer [target] [amount]',
+    'logout now': 'Usage: logout',
+    dance: 'Unknown command: dance',
+  };
+  for (const [line, message] of Object.entries(cases)) {
+    assert.throws(
+      () => parseLine(line),
+      (err) => err instanceof UsageError && err.message.startsWith(message),
+      line,
+    );
+  }
 });
 
-test('an invalid amount is reported as a domain error', () => {
+test('amounts that are not positive whole numbers are rejected, including decimals', () => {
   const lines = [
     'deposit abc',
     'deposit 0',
     'withdraw -5',
     'deposit 0.01',
     'deposit 12.5',
-    'withdraw 10.00',
+    'deposit 10.0', // looks like a whole number but still has a decimal point
     'transfer Emma 7.25',
+    'deposit 10000000001', // above the $10,000,000,000 limit
   ];
   for (const line of lines) {
     assert.throws(
@@ -61,30 +56,4 @@ test('an invalid amount is reported as a domain error', () => {
       line,
     );
   }
-});
-
-test('transfer takes one target word and a whole-number amount', () => {
-  assert.deepEqual(parseLine('transfer Emma 50'), {
-    command: 'transfer',
-    target: 'Emma',
-    amount: 50,
-  });
-});
-
-test('transfer needs exactly a target and an amount', () => {
-  assertUsage('transfer', 'Usage: transfer [target] [amount]');
-  assertUsage('transfer Emma', 'Usage: transfer [target] [amount]');
-  assertUsage('transfer Johan Andreas 7', 'Usage: transfer [target] [amount]');
-});
-
-test('logout takes no arguments', () => {
-  assert.deepEqual(parseLine('logout'), { command: 'logout' });
-  assertUsage('logout now', 'Usage: logout');
-});
-
-test('unknown commands list the available ones', () => {
-  assertUsage(
-    'dance',
-    'Unknown command: dance. Available commands: login, deposit, withdraw, transfer, logout',
-  );
 });

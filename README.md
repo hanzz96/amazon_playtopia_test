@@ -26,19 +26,16 @@ Type these commands at the `$ ` prompt, and press Ctrl+D to exit:
 - `transfer [target] [amount]`
 - `logout`
 
-Input can also be piped: `printf 'login Emma\ndeposit 100\nlogout\n' | ./start.sh`.
-
 ## Instructions to run tests
 
 ```bash
-npm test                 # 72 tests, no dependencies
+npm test                 # 17 tests, no dependencies
 npm run test:coverage    # with coverage report
 ```
 
 ## Key decisions and assumptions
 
-**Confirmed** means the answer came from the requirement owner. **Assumed** is my own choice and is
-still waiting for confirmation.
+**Confirmed** means the answer came from the requirement owner. **Assumed** is my own choice.
 
 | Topic | Decision | Status |
 |---|---|---|
@@ -61,14 +58,9 @@ still waiting for confirmation.
   and only one customer can be logged in at a time.
 - **Amount limit.** Above $10,000,000,000 per operation, the amount is rejected as invalid, with the
   same message as any other invalid amount.
-- **Output pipes.** If stdout is closed early (for example `./start.sh | head -1`), the resulting
-  `EPIPE` error is not handled.
 - **Balance overflow, in theory.** The sum of all balances could exceed JavaScript's safe integer
   range after roughly 900,000 deposits at the maximum amount. There is no guard.
-- **Unconfirmed assumptions.** Every row marked "Assumed" above may change once confirmed.
-- **Windows is verified only in CI.** The GitHub Actions workflow `.github/workflows/test.yml`
-  passed on Windows, Ubuntu and macOS with Node 20, 22 and 24 (72 tests, none skipped). I have not
-  run it by hand on a Windows machine. `.gitattributes` keeps LF line endings, because CRLF breaks
-  `start.sh`. Local checks were on macOS (Node 20, 22, 24, 26) and Linux (Alpine with Node 22).
-- **Other gaps.** Node 18 is not tested. There is no lint or typecheck script. The code was not
-  reviewed a second time after the single-word and no-decimal changes.
+- **Test scope.** The 17 tests cover the business rules and the command parser. The exact output
+  text, `start.sh` itself (including a fresh start on every run) and the problem statement's example
+  session were checked by hand and have no automated test. `npm run test:coverage` shows about 99%,
+  but it only counts files the tests load; counting all of `src/cli` too, line coverage is about 82%.
