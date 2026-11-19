@@ -142,7 +142,7 @@ Fase 2 dan 3 dikerjakan dengan `tdd-workflow`: tes ditulis lebih dulu (RED), lal
 
 ### Fase 5: README
 - README wajib memuat lima hal: (1) versi runtime yang dibutuhkan, (2) instruksi setup dan menjalankan, (3) instruksi menjalankan tes, (4) keputusan dan asumsi utama beserta statusnya, (5) keterbatasan yang diketahui dan pekerjaan yang belum selesai. README hanya berisi kelima bagian itu, tanpa bagian lain (tanpa daftar command terpisah, contoh sesi, atau layout).
-- Portabilitas: `start.sh` memakai `#!/bin/sh` (tanpa bashism), `.gitattributes` memaksa LF, e2e di Windows lewat `bash start.sh` (dilewati dengan alasan jika bash tidak ada), dan `npm start` sebagai jalan tanpa shell. Terverifikasi di macOS dan Linux (Alpine, Node 22). Windows belum dijalankan; workflow CI `.github/workflows/test.yml` disiapkan tapi belum pernah berjalan.
+- Portabilitas: `start.sh` memakai `#!/bin/sh` (tanpa bashism), `.gitattributes` memaksa LF, e2e di Windows lewat `bash start.sh` (dilewati dengan alasan jika bash tidak ada), dan `npm start` sebagai jalan tanpa shell. Terverifikasi lokal di macOS dan Linux (Alpine, Node 22). Windows lulus di CI `.github/workflows/test.yml` (Node 20, 22, 24; 72 tes, 0 dilewati), belum dicoba manual di mesin Windows.
 - Versi Node minimum ditetapkan 20, karena tes dijalankan dan lulus di Node 20, 22, 24, dan 26. Node 18 tidak tersedia untuk diuji.
 
 ## 6. File yang dibuat atau diubah

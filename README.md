@@ -66,10 +66,9 @@ still waiting for confirmation.
 - **Balance overflow, in theory.** The sum of all balances could exceed JavaScript's safe integer
   range after roughly 900,000 deposits at the maximum amount. There is no guard.
 - **Unconfirmed assumptions.** Every row marked "Assumed" above may change once confirmed.
-- **Windows is unverified.** I could not run it on Windows. Verified so far: macOS (Node 20, 22, 24,
-  26) and Linux (Alpine with Node 22). For Windows there is `.gitattributes` (keeps LF line endings,
-  because CRLF breaks `start.sh`) and a CI workflow, `.github/workflows/test.yml`, that runs the
-  tests on Ubuntu, Windows and macOS. That workflow has not run yet because it needs a push to
-  GitHub.
+- **Windows is verified only in CI.** The GitHub Actions workflow `.github/workflows/test.yml`
+  passed on Windows, Ubuntu and macOS with Node 20, 22 and 24 (72 tests, none skipped). I have not
+  run it by hand on a Windows machine. `.gitattributes` keeps LF line endings, because CRLF breaks
+  `start.sh`. Local checks were on macOS (Node 20, 22, 24, 26) and Linux (Alpine with Node 22).
 - **Other gaps.** Node 18 is not tested. There is no lint or typecheck script. The code was not
   reviewed a second time after the single-word and no-decimal changes.
