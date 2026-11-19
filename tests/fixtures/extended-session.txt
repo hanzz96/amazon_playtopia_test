@@ -1,0 +1,66 @@
+$ login Emma
+Hello, Emma!
+Your balance is $0
+$ logout
+Goodbye, Emma!
+$ login Carol
+Hello, Carol!
+Your balance is $0
+$ logout
+Goodbye, Carol!
+$ login Kevin
+Hello, Kevin!
+Your balance is $0
+$ transfer Emma 40
+Your balance is $0
+Owed $40 to Emma
+$ transfer Carol 30
+Your balance is $0
+Owed $40 to Emma
+Owed $30 to Carol
+$ withdraw 10
+Insufficient balance. Your balance is $0
+$ deposit 50
+Transferred $40 to Emma
+Transferred $10 to Carol
+Your balance is $0
+Owed $20 to Carol
+$ deposit 100
+Transferred $20 to Carol
+Your balance is $80
+$ deposit 0.01
+Invalid amount. Use a positive whole number
+$ withdraw 30.5
+Invalid amount. Use a positive whole number
+$ withdraw 30
+Your balance is $50
+$ login Johan
+Already logged in as Kevin. Please logout first
+$ logout
+Goodbye, Kevin!
+$ login Johan Andreas
+Usage: login [name]
+$ login Johan
+Hello, Johan!
+Your balance is $0
+$ transfer Kevin 5
+Your balance is $0
+Owed $5 to Kevin
+$ logout
+Goodbye, Johan!
+$ login Kevin
+Hello, Kevin!
+Your balance is $50
+Owed $5 from Johan
+$ transfer Nobody 5
+Customer Nobody not found
+$ transfer Kevin 5
+You cannot transfer to yourself
+$ deposit abc
+Invalid amount. Use a positive whole number
+$ dance
+Unknown command: dance. Available commands: login, deposit, withdraw, transfer, logout
+$ logout
+Goodbye, Kevin!
+$ deposit 5
+Please login first
